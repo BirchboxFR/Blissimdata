@@ -149,7 +149,7 @@ export default function UserDetail({ params }: { params: { id: string } }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="col-span-1 lg:col-span-2 space-y-6">
+        <div className="col-span-1 lg:col-span-2 flex flex-col gap-6">
           <Card className="border-border shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display">
@@ -223,14 +223,16 @@ export default function UserDetail({ params }: { params: { id: string } }) {
             </CardContent>
           </Card>
 
-          <Card className="border-border shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <Card className="order-first border-primary/30 shadow-sm bg-primary/[0.025]">
+            <CardHeader className="flex flex-row items-start justify-between gap-4 pb-2">
               <div>
                 <CardTitle className="flex items-center gap-2 font-display">
                   <Building2 className="h-5 w-5 text-primary" />
-                  Périmètres d'accès marques
+                  Marques autorisées
                 </CardTitle>
-                <CardDescription className="mt-1.5">Gérez les marques auxquelles cet utilisateur a accès.</CardDescription>
+                <CardDescription className="mt-1.5">
+                  Cochez ou décochez les marques accessibles à {user?.name}, puis cliquez sur « Enregistrer les marques ».
+                </CardDescription>
               </div>
               <Button 
                 size="sm" 
@@ -244,15 +246,20 @@ export default function UserDetail({ params }: { params: { id: string } }) {
                 ) : (
                   <>
                     <Save className="h-4 w-4" />
-                    Enregistrer
+                    Enregistrer les marques
                   </>
                 )}
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto p-4 bg-muted/30 rounded-md border mt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto p-4 bg-background rounded-lg border mt-2">
                 {brands?.map((brand) => (
-                  <div key={brand.id} className="flex flex-row items-start space-x-3 space-y-0">
+                  <div
+                    key={brand.id}
+                    className={`flex flex-row items-start gap-3 rounded-md border p-3 transition-colors ${
+                      selectedBrandIds.includes(brand.id) ? 'border-primary/40 bg-primary/5' : 'border-border'
+                    }`}
+                  >
                     <Checkbox
                       id={`brand-${brand.id}`}
                       checked={selectedBrandIds.includes(brand.id)}
@@ -265,7 +272,7 @@ export default function UserDetail({ params }: { params: { id: string } }) {
                       }}
                     />
                     <div className="space-y-1 leading-none">
-                      <Label htmlFor={`brand-${brand.id}`} className="font-normal cursor-pointer text-sm">
+                      <Label htmlFor={`brand-${brand.id}`} className="font-medium cursor-pointer text-sm">
                         {brand.name}
                       </Label>
                       {/* Show existing access details if they have it */}
