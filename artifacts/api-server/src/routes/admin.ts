@@ -13,6 +13,7 @@ import {
   GetUserResponse,
   InviteUserBody,
   InviteUserResponse,
+  ListBrandsResponse,
   ListAccountsResponse,
   ListAuditLogQueryParams,
   ListAuditLogResponse,
@@ -117,6 +118,11 @@ router.get("/accounts", async (_req, res): Promise<void> => {
     createdAt: account.createdAt.toISOString(),
   }));
   res.json(ListAccountsResponse.parse(result));
+});
+
+router.get("/brands", async (_req, res): Promise<void> => {
+  const brands = await db.select().from(brandsTable).orderBy(brandsTable.name);
+  res.json(ListBrandsResponse.parse(brands));
 });
 
 router.post("/accounts", async (req, res): Promise<void> => {

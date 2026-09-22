@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useListUsers, useInviteUser, getListUsersQueryKey } from '@workspace/api-client-react';
+import { useListUsers, useInviteUser, getListUsersQueryKey, useListAccounts, useListBrands } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
@@ -13,15 +13,25 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const inviteSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(2),
+  email: z.string().email({ message: "Adresse e-mail invalide" }),
+  name: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères" }),
   role: z.enum(['admin', 'brand']),
   accountId: z.coerce.number().optional().nullable(),
+  brandIds: z.array(z.number()).optional()
+}).superRefine((data, ctx) => {
+  if (data.role === 'brand' && (!data.brandIds || data.brandIds.length === 0)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Un utilisateur de type 'Marque' doit avoir accès à au moins une marque.",
+      path: ["brandIds"]
+    });
+  }
 });
 
 export default function Users() {
@@ -38,6 +48,8 @@ export default function Users() {
   }, [search]);
 
   const { data: users, isLoading } = useListUsers(debouncedSearch ? { search: debouncedSearch } : undefined);
+  const { data: accounts } = useListAccounts();
+  const { data: brands } = useListBrands();
   const inviteUser = useInviteUser();
 
   const form = useForm<z.infer<typeof inviteSchema>>({
@@ -47,14 +59,26 @@ export default function Users() {
       name: '',
       role: 'brand',
       accountId: null,
+      brandIds: [],
     }
   });
 
+  const watchRole = form.watch('role');
+
   const onSubmit = (values: z.infer<typeof inviteSchema>) => {
+    const brandAccesses = values.brandIds ? values.brandIds.map(brandId => ({
+      brandId,
+      countryScope: 'ALL' as const,
+      expiresAt: null
+    })) : [];
+
     inviteUser.mutate({
       data: {
-        ...values,
-        brandAccesses: [],
+        email: values.email,
+        name: values.name,
+        role: values.role,
+        accountId: values.accountId,
+        brandAccesses,
         packageIds: []
       }
     }, {
@@ -147,6 +171,91 @@ export default function Users() {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="accountId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Compte rattaché (Optionnel)</FormLabel>
+                      <Select 
+                        onValueChange={(val) => field.onChange(val === 'none' ? null : parseInt(val, 10))} 
+                        value={field.value ? field.value.toString() : 'none'}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Aucun compte" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">Aucun compte</SelectItem>
+                          {accounts?.map((acc) => (
+                            <SelectItem key={acc.id} value={acc.id.toString()}>
+                              {acc.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {watchRole === 'brand' && (
+                  <FormField
+                    control={form.control}
+                    name="brandIds"
+                    render={() => (
+                      <FormItem>
+                        <div className="mb-4">
+                          <FormLabel className="text-base">Accès aux marques</FormLabel>
+                          <p className="text-[0.8rem] text-muted-foreground">Sélectionnez les marques auxquelles cet utilisateur aura accès.</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 max-h-[200px] overflow-y-auto p-4 bg-muted/30 rounded-md border">
+                          {brands?.map((brand) => (
+                            <FormField
+                              key={brand.id}
+                              control={form.control}
+                              name="brandIds"
+                              render={({ field }) => {
+                                return (
+                                  <FormItem
+                                    key={brand.id}
+                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                  >
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value?.includes(brand.id)}
+                                        onCheckedChange={(checked) => {
+                                          const current = field.value || [];
+                                          return checked
+                                            ? field.onChange([...current, brand.id])
+                                            : field.onChange(
+                                                current.filter((value) => value !== brand.id)
+                                              );
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="font-normal cursor-pointer text-sm">
+                                      {brand.name}
+                                    </FormLabel>
+                                  </FormItem>
+                                );
+                              }}
+                            />
+                          ))}
+                          {(!brands || brands.length === 0) && (
+                            <div className="col-span-2 text-sm text-muted-foreground text-center py-4">
+                              Aucune marque disponible.
+                            </div>
+                          )}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
                 <div className="pt-4 flex justify-end">
                   <Button type="submit" disabled={inviteUser.isPending} className="rounded-full px-6">
                     {inviteUser.isPending ? 'Envoi en cours...' : 'Envoyer l\'invitation'}

@@ -24,6 +24,7 @@ import type {
   AccountInput,
   AppPage,
   AuditEvent,
+  Brand,
   Dashboard,
   HealthStatus,
   ListAuditLogParams,
@@ -357,6 +358,77 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getCreateAccountMutationOptions(options));
     }
+
+export const getListBrandsUrl = () => {
+
+
+
+
+  return `/api/brands`
+}
+
+export const listBrands = async ( options?: Parameters<typeof customFetch>[1]): Promise<Brand[]> => {
+
+  return customFetch<Brand[]>(getListBrandsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBrandsQueryKey = () => {
+    return [
+    `/api/brands`
+    ] as const;
+    }
+
+
+export const getListBrandsQueryOptions = <TData = Awaited<ReturnType<typeof listBrands>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBrands>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBrandsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBrands>>> = ({ signal }) => listBrands({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBrands>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListBrandsQueryResult = NonNullable<Awaited<ReturnType<typeof listBrands>>>
+export type ListBrandsQueryError = ErrorType<unknown>
+
+
+
+export function useListBrands<TData = Awaited<ReturnType<typeof listBrands>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBrands>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListBrandsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListUsersUrl = (params?: ListUsersParams,) => {
   const normalizedParams = new URLSearchParams();

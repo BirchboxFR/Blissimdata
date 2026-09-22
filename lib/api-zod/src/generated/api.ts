@@ -68,6 +68,15 @@ export const CreateAccountResponse = zod.object({
 })
 
 
+export const ListBrandsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "countries": zod.array(zod.string())
+})
+export const ListBrandsResponse = zod.array(ListBrandsResponseItem)
+
+
 export const ListUsersQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "status": zod.enum(['active', 'invited', 'expired']).optional()

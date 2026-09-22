@@ -1,9 +1,9 @@
-import { useGetUser, useUpdateUser, getGetUserQueryKey, useListAccounts } from '@workspace/api-client-react';
+import { useGetUser, useUpdateUser, getGetUserQueryKey, useListAccounts, useListBrands } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ChevronLeft, Save, AlertTriangle, User as UserIcon, Building2, Package, Shield } from 'lucide-react';
+import { ChevronLeft, Save, AlertTriangle, User as UserIcon, Building2, Package, Shield, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -13,8 +13,9 @@ import { z } from 'zod';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -28,11 +29,15 @@ export default function UserDetail({ params }: { params: { id: string } }) {
   const userId = parseInt(params.id, 10);
   const { data: user, isLoading, error } = useGetUser(userId);
   const { data: accounts } = useListAccounts();
+  const { data: brands } = useListBrands();
   const updateUser = useUpdateUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   
+  const [selectedBrandIds, setSelectedBrandIds] = useState<number[]>([]);
+  const [isSavingBrands, setIsSavingBrands] = useState(false);
+
   const form = useForm<z.infer<typeof userUpdateSchema>>({
     resolver: zodResolver(userUpdateSchema),
     defaultValues: {
@@ -52,8 +57,48 @@ export default function UserDetail({ params }: { params: { id: string } }) {
         status: user.status as any,
         accountId: user.accountId,
       });
+      setSelectedBrandIds(user.brandAccesses?.map(a => a.brandId) || []);
     }
   }, [user, userId, form]);
+
+  const handleSaveBrands = () => {
+    if (!user) return;
+    setIsSavingBrands(true);
+
+    // Map selected IDs back to access objects. Preserve existing if they exist, otherwise default.
+    const newBrandAccesses = selectedBrandIds.map(brandId => {
+      const existing = user.brandAccesses?.find(a => a.brandId === brandId);
+      if (existing) {
+        return {
+          brandId,
+          countryScope: existing.countryScope,
+          expiresAt: existing.expiresAt
+        };
+      }
+      return {
+        brandId,
+        countryScope: 'ALL' as const,
+        expiresAt: null
+      };
+    });
+
+    updateUser.mutate({
+      id: userId,
+      data: {
+        brandAccesses: newBrandAccesses
+      },
+    }, {
+      onSuccess: () => {
+        toast({ title: 'Accès marques mis à jour avec succès.' });
+        queryClient.invalidateQueries({ queryKey: getGetUserQueryKey(userId) });
+        setIsSavingBrands(false);
+      },
+      onError: (err: any) => {
+        toast({ title: "Erreur lors de la mise à jour des accès", description: err.message, variant: 'destructive' });
+        setIsSavingBrands(false);
+      }
+    });
+  };
 
   const onSubmit = (values: z.infer<typeof userUpdateSchema>) => {
     updateUser.mutate({
@@ -216,46 +261,74 @@ export default function UserDetail({ params }: { params: { id: string } }) {
           </Card>
 
           <Card className="border-border shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-display">
-                <Building2 className="h-5 w-5 text-primary" />
-                Périmètres d'accès marques
-              </CardTitle>
-              <CardDescription>Marques et pays spécifiques auxquels cet utilisateur a accès.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div>
+                <CardTitle className="flex items-center gap-2 font-display">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  Périmètres d'accès marques
+                </CardTitle>
+                <CardDescription className="mt-1.5">Gérez les marques auxquelles cet utilisateur a accès.</CardDescription>
+              </div>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={handleSaveBrands}
+                disabled={isSavingBrands || updateUser.isPending}
+                className="gap-2"
+              >
+                {isSavingBrands ? (
+                  'Enregistrement...'
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Enregistrer
+                  </>
+                )}
+              </Button>
             </CardHeader>
             <CardContent>
-              {user?.brandAccesses?.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground bg-muted/30 rounded-lg border border-dashed">
-                  Aucun accès marque configuré.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {user?.brandAccesses?.map((access, idx) => (
-                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border bg-card shadow-sm hover:border-primary/30 transition-colors">
-                      <div>
-                        <div className="font-semibold text-foreground">{access.brandName}</div>
-                        <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
-                          <span>Pays :</span>
-                          <span className="font-medium text-foreground">
-                            {access.countryScope === 'ALL' ? 'Global (Tous)' : (Array.isArray(access.countryScope) ? access.countryScope.join(', ') : access.countryScope)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="mt-2 sm:mt-0">
-                        {access.expiresAt ? (
-                          <Badge variant="outline" className="border-destructive/30 text-destructive">
-                            Expire le : {format(new Date(access.expiresAt), 'd MMM yyyy', { locale: fr })}
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-badge-lime text-foreground hover:bg-badge-lime/80 shadow-none">
-                            N'expire jamais
-                          </Badge>
-                        )}
-                      </div>
+              <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto p-4 bg-muted/30 rounded-md border mt-2">
+                {brands?.map((brand) => (
+                  <div key={brand.id} className="flex flex-row items-start space-x-3 space-y-0">
+                    <Checkbox
+                      id={`brand-${brand.id}`}
+                      checked={selectedBrandIds.includes(brand.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedBrandIds(prev => [...prev, brand.id]);
+                        } else {
+                          setSelectedBrandIds(prev => prev.filter(id => id !== brand.id));
+                        }
+                      }}
+                    />
+                    <div className="space-y-1 leading-none">
+                      <Label htmlFor={`brand-${brand.id}`} className="font-normal cursor-pointer text-sm">
+                        {brand.name}
+                      </Label>
+                      {/* Show existing access details if they have it */}
+                      {user?.brandAccesses?.find(a => a.brandId === brand.id) && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {user.brandAccesses.find(a => a.brandId === brand.id)?.countryScope === 'ALL' 
+                            ? 'Global' 
+                            : (Array.isArray(user.brandAccesses.find(a => a.brandId === brand.id)?.countryScope) 
+                                ? (user.brandAccesses.find(a => a.brandId === brand.id)?.countryScope as string[]).join(', ') 
+                                : user.brandAccesses.find(a => a.brandId === brand.id)?.countryScope as string
+                              )
+                          }
+                          {user.brandAccesses.find(a => a.brandId === brand.id)?.expiresAt && 
+                            ` • Expire: ${format(new Date(user.brandAccesses.find(a => a.brandId === brand.id)!.expiresAt!), 'dd/MM/yyyy')}`
+                          }
+                        </p>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+                {(!brands || brands.length === 0) && (
+                  <div className="col-span-2 text-sm text-muted-foreground text-center py-4">
+                    Aucune marque disponible.
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
