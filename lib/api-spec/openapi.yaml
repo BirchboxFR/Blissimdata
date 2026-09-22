@@ -322,8 +322,6 @@ components:
     UserUpdate:
       type: object
       properties:
-        name: { type: string }
-        status: { type: string, enum: [active, invited, expired] }
         accountId: { type: ["integer", "null"] }
         brandAccesses:
           type: array

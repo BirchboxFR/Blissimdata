@@ -20,8 +20,6 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const userUpdateSchema = z.object({
-  name: z.string().min(2),
-  status: z.enum(['active', 'invited', 'expired']),
   accountId: z.coerce.number().nullable().optional(),
 });
 
@@ -41,8 +39,6 @@ export default function UserDetail({ params }: { params: { id: string } }) {
   const form = useForm<z.infer<typeof userUpdateSchema>>({
     resolver: zodResolver(userUpdateSchema),
     defaultValues: {
-      name: '',
-      status: 'active',
       accountId: null,
     }
   });
@@ -53,8 +49,6 @@ export default function UserDetail({ params }: { params: { id: string } }) {
     if (user && initializedForId.current !== userId) {
       initializedForId.current = userId;
       form.reset({
-        name: user.name,
-        status: user.status as any,
         accountId: user.accountId,
       });
       setSelectedBrandIds(user.brandAccesses?.map(a => a.brandId) || []);
@@ -160,55 +154,24 @@ export default function UserDetail({ params }: { params: { id: string } }) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display">
                 <UserIcon className="h-5 w-5 text-primary" />
-                Identité et Informations
+                Identité Clerk et compte client
               </CardTitle>
-              <CardDescription>Gérez les informations principales et le statut de l'utilisateur.</CardDescription>
+              <CardDescription>L’identité et le statut de connexion sont gérés par Clerk. Ici, vous gérez uniquement le rattachement métier.</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nom complet</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <FormItem>
+                      <Label htmlFor="user-name">Nom</Label>
+                      <Input id="user-name" value={user?.name ?? ''} disabled className="bg-muted/50 cursor-not-allowed" />
+                      <p className="text-[0.8rem] text-muted-foreground">Profil géré par Clerk.</p>
+                    </FormItem>
                     <FormItem>
                       <Label htmlFor="user-email">Adresse e-mail</Label>
                       <Input id="user-email" value={user?.email ?? ''} disabled className="bg-muted/50 cursor-not-allowed" />
-                      <p className="text-[0.8rem] text-muted-foreground">L'adresse e-mail ne peut pas être modifiée.</p>
+                      <p className="text-[0.8rem] text-muted-foreground">Connexion et invitation gérées par Clerk.</p>
                     </FormItem>
-                    
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Statut</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Sélectionnez un statut" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="active">Actif</SelectItem>
-                              <SelectItem value="invited">Invité</SelectItem>
-                              <SelectItem value="expired">Expiré</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
                     <FormField
                       control={form.control}
@@ -240,19 +203,19 @@ export default function UserDetail({ params }: { params: { id: string } }) {
                     />
 
                     <FormItem>
-                      <FormLabel>Rôle</FormLabel>
+                      <Label>Type d’accès</Label>
                       <div className="h-10 px-3 py-2 rounded-md border bg-muted/50 text-sm flex items-center gap-2">
                         {user?.role === 'admin' ? <Shield className="h-4 w-4 text-primary" /> : <UserIcon className="h-4 w-4 text-muted-foreground" />}
                         <span className="capitalize">{user?.role === 'admin' ? 'Administrateur' : 'Utilisateur Marque'}</span>
                       </div>
-                      <p className="text-[0.8rem] text-muted-foreground">Le changement de rôle nécessite une nouvelle invitation.</p>
+                      <p className="text-[0.8rem] text-muted-foreground">Les administrateurs sont gérés côté Clerk et réservés à l’équipe Blissim.</p>
                     </FormItem>
                   </div>
                   
                   <div className="flex justify-end pt-4 border-t">
                     <Button type="submit" disabled={updateUser.isPending} className="gap-2 rounded-full px-6 shadow-sm">
                       <Save className="h-4 w-4" />
-                      {updateUser.isPending ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                      {updateUser.isPending ? 'Enregistrement...' : 'Enregistrer le compte'}
                     </Button>
                   </div>
                 </form>
@@ -369,10 +332,6 @@ export default function UserDetail({ params }: { params: { id: string } }) {
                 <div className="flex justify-between border-b pb-2">
                   <dt className="text-muted-foreground">ID</dt>
                   <dd className="font-mono font-medium">{user?.id}</dd>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <dt className="text-muted-foreground">Type d'authentification</dt>
-                  <dd className="font-medium capitalize">{user?.authType}</dd>
                 </div>
                 <div className="flex justify-between border-b pb-2">
                   <dt className="text-muted-foreground">Créé le</dt>

@@ -171,8 +171,6 @@ export const UpdateUserParams = zod.object({
 })
 
 export const UpdateUserBody = zod.object({
-  "name": zod.string().optional(),
-  "status": zod.enum(['active', 'invited', 'expired']).optional(),
   "accountId": zod.number().int().nullish(),
   "brandAccesses": zod.array(zod.object({
   "brandId": zod.number().int(),

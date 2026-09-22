@@ -28,4 +28,3 @@ export * from './userInputRole';
 export * from './userRole';
 export * from './userStatus';
 export * from './userUpdate';
-export * from './userUpdateStatus';

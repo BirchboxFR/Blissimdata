@@ -21,11 +21,10 @@ import { fr } from 'date-fns/locale';
 const inviteSchema = z.object({
   email: z.string().email({ message: "Adresse e-mail invalide" }),
   name: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères" }),
-  role: z.enum(['admin', 'brand']),
   accountId: z.coerce.number().optional().nullable(),
   brandIds: z.array(z.number()).optional()
 }).superRefine((data, ctx) => {
-  if (data.role === 'brand' && (!data.brandIds || data.brandIds.length === 0)) {
+  if (!data.brandIds || data.brandIds.length === 0) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Un utilisateur de type 'Marque' doit avoir accès à au moins une marque.",
@@ -57,13 +56,10 @@ export default function Users() {
     defaultValues: {
       email: '',
       name: '',
-      role: 'brand',
       accountId: null,
       brandIds: [],
     }
   });
-
-  const watchRole = form.watch('role');
 
   const onSubmit = (values: z.infer<typeof inviteSchema>) => {
     const brandAccesses = values.brandIds ? values.brandIds.map(brandId => ({
@@ -76,7 +72,7 @@ export default function Users() {
       data: {
         email: values.email,
         name: values.name,
-        role: values.role,
+        role: 'brand',
         accountId: values.accountId,
         brandAccesses,
         packageIds: []
@@ -152,28 +148,6 @@ export default function Users() {
                 />
                 <FormField
                   control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Rôle</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionnez un rôle" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="admin">Administrateur</SelectItem>
-                          <SelectItem value="brand">Utilisateur Marque</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="accountId"
                   render={({ field }) => (
                     <FormItem>
@@ -201,8 +175,7 @@ export default function Users() {
                   )}
                 />
 
-                {watchRole === 'brand' && (
-                  <FormField
+                <FormField
                     control={form.control}
                     name="brandIds"
                     render={() => (
@@ -253,8 +226,7 @@ export default function Users() {
                         <FormMessage />
                       </FormItem>
                     )}
-                  />
-                )}
+                />
 
                 <div className="pt-4 flex justify-end">
                   <Button type="submit" disabled={inviteUser.isPending} className="rounded-full px-6">

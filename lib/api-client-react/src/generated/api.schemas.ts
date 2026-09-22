@@ -127,18 +127,7 @@ export interface UserInput {
   packageIds: number[];
 }
 
-export type UserUpdateStatus = typeof UserUpdateStatus[keyof typeof UserUpdateStatus];
-
-
-export const UserUpdateStatus = {
-  active: 'active',
-  invited: 'invited',
-  expired: 'expired',
-} as const;
-
 export interface UserUpdate {
-  name?: string;
-  status?: UserUpdateStatus;
   /** @nullable */
   accountId?: number | null;
   brandAccesses?: BrandAccessInput[];

@@ -1,0 +1,1 @@
+- [Responsabilités Clerk et Blissim](clerk-vs-entitlements.md) — Clerk gère identité et authentification; l’application conserve seulement les droits métier Blissim.

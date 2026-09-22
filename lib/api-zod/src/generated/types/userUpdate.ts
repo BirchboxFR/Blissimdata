@@ -6,11 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BrandAccessInput } from './brandAccessInput';
-import type { UserUpdateStatus } from './userUpdateStatus';
 
 export interface UserUpdate {
-  name?: string;
-  status?: UserUpdateStatus;
   /** @nullable */
   accountId?: number | null;
   brandAccesses?: BrandAccessInput[];
