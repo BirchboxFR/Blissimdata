@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Blissim Analytics"
+description = "Plateforme de reporting Blissim avec administration sécurisée des comptes partenaires, utilisateurs, marques, pays, packages de pages, expirations d’accès et journal d’audit."
+version = "1.0.0"
+id = "artifacts/blissim-analytics"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25370
+
+[services.development]
+run = "pnpm --filter @workspace/blissim-analytics run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/blissim-analytics", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/blissim-analytics/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25370"
+BASE_PATH = "/"

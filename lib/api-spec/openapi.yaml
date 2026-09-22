@@ -1,36 +1,379 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Blissim Analytics administration API
 servers:
   - url: /api
     description: Base API path
 tags:
-  - name: health
-    description: Health operations
+  - { name: health }
+  - { name: dashboard }
+  - { name: accounts }
+  - { name: users }
+  - { name: packages }
+  - { name: pages }
+  - { name: audit }
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
-      summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
           content:
             application/json:
+              schema: { $ref: "#/components/schemas/HealthStatus" }
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      responses:
+        "200":
+          description: Administration overview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Dashboard" }
+  /accounts:
+    get:
+      operationId: listAccounts
+      tags: [accounts]
+      responses:
+        "200":
+          description: Accounts
+          content:
+            application/json:
               schema:
-                $ref: "#/components/schemas/HealthStatus"
+                type: array
+                items: { $ref: "#/components/schemas/Account" }
+    post:
+      operationId: createAccount
+      tags: [accounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccountInput" }
+      responses:
+        "201":
+          description: Created account
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Account" }
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [active, invited, expired] }
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/User" }
+    post:
+      operationId: inviteUser
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserInput" }
+      responses:
+        "201":
+          description: Invited user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+    patch:
+      operationId: updateUser
+      tags: [users]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserUpdate" }
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+  /packages:
+    get:
+      operationId: listPackages
+      tags: [packages]
+      responses:
+        "200":
+          description: Permission packages
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PermissionPackage" }
+    post:
+      operationId: createPackage
+      tags: [packages]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PackageInput" }
+      responses:
+        "201":
+          description: Created package
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PermissionPackage" }
+  /packages/{id}:
+    patch:
+      operationId: updatePackage
+      tags: [packages]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PackageInput" }
+      responses:
+        "200":
+          description: Updated package
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PermissionPackage" }
+  /pages:
+    get:
+      operationId: listPages
+      tags: [pages]
+      responses:
+        "200":
+          description: Page registry
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AppPage" }
+    post:
+      operationId: createPage
+      tags: [pages]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PageInput" }
+      responses:
+        "201":
+          description: Created page
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AppPage" }
+  /audit-log:
+    get:
+      operationId: listAuditLog
+      tags: [audit]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 30 }
+      responses:
+        "200":
+          description: Recent access changes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AuditEvent" }
 components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        status: { type: string }
+    Dashboard:
+      type: object
+      required: [accounts, users, activeUsers, expiringAccesses, brands, recentActivity]
+      properties:
+        accounts: { type: integer }
+        users: { type: integer }
+        activeUsers: { type: integer }
+        expiringAccesses: { type: integer }
+        brands: { type: integer }
+        recentActivity:
+          type: array
+          items: { $ref: "#/components/schemas/AuditEvent" }
+    Brand:
+      type: object
+      required: [id, code, name, countries]
+      properties:
+        id: { type: integer }
+        code: { type: string }
+        name: { type: string }
+        countries:
+          type: array
+          items: { type: string }
+    Account:
+      type: object
+      required: [id, name, brands, userCount, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        brands:
+          type: array
+          items: { $ref: "#/components/schemas/Brand" }
+        userCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+    AccountInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        brandIds:
+          type: array
+          items: { type: integer }
+    BrandAccess:
+      type: object
+      required: [brandId, brandName, countryScope]
+      properties:
+        brandId: { type: integer }
+        brandName: { type: string }
+        countryScope:
+          oneOf:
+            - { type: string, const: ALL }
+            - { type: array, items: { type: string } }
+        expiresAt: { type: ["string", "null"], format: date-time }
+    User:
+      type: object
+      required: [id, email, name, role, status, accountId, accountName, authType, brandAccesses, packageIds, createdAt]
+      properties:
+        id: { type: integer }
+        email: { type: string, format: email }
+        name: { type: string }
+        role: { type: string, enum: [admin, brand] }
+        status: { type: string, enum: [active, invited, expired] }
+        accountId: { type: ["integer", "null"] }
+        accountName: { type: ["string", "null"] }
+        authType: { type: string, enum: [google, password, hybrid] }
+        brandAccesses:
+          type: array
+          items: { $ref: "#/components/schemas/BrandAccess" }
+        packageIds:
+          type: array
+          items: { type: integer }
+        lastActiveAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+    UserInput:
+      type: object
+      required: [email, name, role, brandAccesses, packageIds]
+      properties:
+        email: { type: string, format: email }
+        name: { type: string, minLength: 1 }
+        role: { type: string, enum: [admin, brand] }
+        accountId: { type: ["integer", "null"] }
+        brandAccesses:
+          type: array
+          items: { $ref: "#/components/schemas/BrandAccessInput" }
+        packageIds:
+          type: array
+          items: { type: integer }
+    UserUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        status: { type: string, enum: [active, invited, expired] }
+        accountId: { type: ["integer", "null"] }
+        brandAccesses:
+          type: array
+          items: { $ref: "#/components/schemas/BrandAccessInput" }
+        packageIds:
+          type: array
+          items: { type: integer }
+    BrandAccessInput:
+      type: object
+      required: [brandId, countryScope]
+      properties:
+        brandId: { type: integer }
+        countryScope:
+          oneOf:
+            - { type: string, const: ALL }
+            - { type: array, items: { type: string } }
+        expiresAt: { type: ["string", "null"], format: date-time }
+    AppPage:
+      type: object
+      required: [id, key, name, description]
+      properties:
+        id: { type: integer }
+        key: { type: string }
+        name: { type: string }
+        description: { type: string }
+    PageInput:
+      type: object
+      required: [key, name, description]
+      properties:
+        key: { type: string, minLength: 1 }
+        name: { type: string, minLength: 1 }
+        description: { type: string }
+    PermissionPackage:
+      type: object
+      required: [id, name, description, pageIds, pageCount, userCount, isDefault]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        description: { type: string }
+        pageIds:
+          type: array
+          items: { type: integer }
+        pageCount: { type: integer }
+        userCount: { type: integer }
+        isDefault: { type: boolean }
+    PackageInput:
+      type: object
+      required: [name, description, pageIds, isDefault]
+      properties:
+        name: { type: string, minLength: 1 }
+        description: { type: string }
+        pageIds:
+          type: array
+          items: { type: integer }
+        isDefault: { type: boolean }
+    AuditEvent:
+      type: object
+      required: [id, actorName, action, targetType, targetName, summary, createdAt]
+      properties:
+        id: { type: integer }
+        actorName: { type: string }
+        action: { type: string }
+        targetType: { type: string }
+        targetName: { type: string }
+        summary: { type: string }
+        createdAt: { type: string, format: date-time }

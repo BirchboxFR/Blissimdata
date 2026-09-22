@@ -1,45 +1,39 @@
-# [Project name]
+# Blissim Analytics
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Plateforme de reporting Blissim avec administration des comptes partenaires, utilisateurs, marques, pays et droits d’accès.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/api-server run dev` — API server (port managed by its workflow)
+- `pnpm --filter @workspace/blissim-analytics run dev` — web app (port managed by its workflow)
+- `pnpm run typecheck` — full workspace typecheck
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas
+- `pnpm --filter @workspace/db run push` — push development schema changes
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- React + Vite + Tailwind CSS
+- Express 5 API with OpenAPI-generated client and validation
+- PostgreSQL + Drizzle ORM
+- Replit-managed Clerk authentication
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/blissim-analytics/` — frontend application
+- `artifacts/api-server/src/routes/admin.ts` — administration endpoints
+- `lib/api-spec/openapi.yaml` — API contract and source of generated types
+- `lib/db/src/schema/admin.ts` — accounts, brands, users, packages, pages, and audit schema
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Administration endpoints require an authenticated Clerk user with an `@blissim.fr` primary email.
+- Partner users belong to one account and receive explicit brand/country scopes plus reusable page packages.
+- Blissim admins are globally privileged; partner reporting screens are a later product surface.
+- Brand-country mappings are represented in the app schema and are intended to be synchronized from BigQuery separately.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
-
-## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Overview of accounts, users, canonical brands, expiring access, and recent changes
+- User invitations with brand, country, package, and expiration controls
+- Account, package, and reporting-page registry management
+- Immutable access-change audit history
