@@ -4,7 +4,6 @@ import { useUser, useClerk } from '@clerk/react';
 import { 
   LayoutDashboard, 
   Users, 
-  Building2, 
   Package, 
   FileText, 
   Activity,
@@ -17,7 +16,6 @@ import { useState } from 'react';
 const navigation = [
   { name: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Utilisateurs', href: '/users', icon: Users },
-  { name: 'Comptes', href: '/accounts', icon: Building2 },
   { name: 'Packs d\'autorisations', href: '/packages', icon: Package },
   { name: 'Pages', href: '/pages', icon: FileText },
   { name: 'Journal d\'audit', href: '/audit', icon: Activity },

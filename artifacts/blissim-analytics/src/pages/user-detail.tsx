@@ -1,17 +1,11 @@
-import { useGetUser, useUpdateUser, getGetUserQueryKey, useListAccounts, useListBrands } from '@workspace/api-client-react';
+import { useGetUser, useUpdateUser, getGetUserQueryKey, getListUsersQueryKey, useListBrands } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ChevronLeft, Save, AlertTriangle, User as UserIcon, Building2, Package, Shield, Check } from 'lucide-react';
+import { ChevronLeft, Save, AlertTriangle, Building2, Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
@@ -19,15 +13,10 @@ import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const userUpdateSchema = z.object({
-  accountId: z.coerce.number().nullable().optional(),
-});
-
 export default function UserDetail({ params }: { params: { id: string } }) {
   const userId = parseInt(params.id, 10);
   const { data: user, isLoading, error } = useGetUser(userId);
-  const { data: accounts } = useListAccounts();
-  const { data: brands } = useListBrands();
+  const { data: brands, isLoading: brandsLoading, isError: brandsError } = useListBrands();
   const updateUser = useUpdateUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -36,24 +25,14 @@ export default function UserDetail({ params }: { params: { id: string } }) {
   const [selectedBrandIds, setSelectedBrandIds] = useState<number[]>([]);
   const [isSavingBrands, setIsSavingBrands] = useState(false);
 
-  const form = useForm<z.infer<typeof userUpdateSchema>>({
-    resolver: zodResolver(userUpdateSchema),
-    defaultValues: {
-      accountId: null,
-    }
-  });
-
   const initializedForId = useRef<number | null>(null);
 
   useEffect(() => {
     if (user && initializedForId.current !== userId) {
       initializedForId.current = userId;
-      form.reset({
-        accountId: user.accountId,
-      });
       setSelectedBrandIds(user.brandAccesses?.map(a => a.brandId) || []);
     }
-  }, [user, userId, form]);
+  }, [user, userId]);
 
   const handleSaveBrands = () => {
     if (!user) return;
@@ -85,26 +64,12 @@ export default function UserDetail({ params }: { params: { id: string } }) {
       onSuccess: () => {
         toast({ title: 'Accès marques mis à jour avec succès.' });
         queryClient.invalidateQueries({ queryKey: getGetUserQueryKey(userId) });
+        queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
         setIsSavingBrands(false);
       },
       onError: (err: any) => {
         toast({ title: "Erreur lors de la mise à jour des accès", description: err.message, variant: 'destructive' });
         setIsSavingBrands(false);
-      }
-    });
-  };
-
-  const onSubmit = (values: z.infer<typeof userUpdateSchema>) => {
-    updateUser.mutate({
-      id: userId,
-      data: values,
-    }, {
-      onSuccess: () => {
-        toast({ title: 'Utilisateur mis à jour avec succès.' });
-        queryClient.invalidateQueries({ queryKey: getGetUserQueryKey(userId) });
-      },
-      onError: (err: any) => {
-        toast({ title: "Erreur lors de la mise à jour de l'utilisateur", description: err.message, variant: 'destructive' });
       }
     });
   };
@@ -150,79 +115,6 @@ export default function UserDetail({ params }: { params: { id: string } }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="col-span-1 lg:col-span-2 flex flex-col gap-6">
-          <Card className="border-border shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-display">
-                <UserIcon className="h-5 w-5 text-primary" />
-                Identité Clerk et compte client
-              </CardTitle>
-              <CardDescription>L’identité et le statut de connexion sont gérés par Clerk. Ici, vous gérez uniquement le rattachement métier.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormItem>
-                      <Label htmlFor="user-name">Nom</Label>
-                      <Input id="user-name" value={user?.name ?? ''} disabled className="bg-muted/50 cursor-not-allowed" />
-                      <p className="text-[0.8rem] text-muted-foreground">Profil géré par Clerk.</p>
-                    </FormItem>
-                    <FormItem>
-                      <Label htmlFor="user-email">Adresse e-mail</Label>
-                      <Input id="user-email" value={user?.email ?? ''} disabled className="bg-muted/50 cursor-not-allowed" />
-                      <p className="text-[0.8rem] text-muted-foreground">Connexion et invitation gérées par Clerk.</p>
-                    </FormItem>
-
-                    <FormField
-                      control={form.control}
-                      name="accountId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Compte assigné</FormLabel>
-                          <Select 
-                            onValueChange={(val) => field.onChange(val === 'unassigned' ? null : parseInt(val, 10))} 
-                            value={field.value ? field.value.toString() : 'unassigned'}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Sélectionnez un compte" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="unassigned">Non assigné</SelectItem>
-                              {accounts?.map((acc) => (
-                                <SelectItem key={acc.id} value={acc.id.toString()}>
-                                  {acc.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormItem>
-                      <Label>Type d’accès</Label>
-                      <div className="h-10 px-3 py-2 rounded-md border bg-muted/50 text-sm flex items-center gap-2">
-                        {user?.role === 'admin' ? <Shield className="h-4 w-4 text-primary" /> : <UserIcon className="h-4 w-4 text-muted-foreground" />}
-                        <span className="capitalize">{user?.role === 'admin' ? 'Administrateur' : 'Utilisateur Marque'}</span>
-                      </div>
-                      <p className="text-[0.8rem] text-muted-foreground">Les administrateurs sont gérés côté Clerk et réservés à l’équipe Blissim.</p>
-                    </FormItem>
-                  </div>
-                  
-                  <div className="flex justify-end pt-4 border-t">
-                    <Button type="submit" disabled={updateUser.isPending} className="gap-2 rounded-full px-6 shadow-sm">
-                      <Save className="h-4 w-4" />
-                      {updateUser.isPending ? 'Enregistrement...' : 'Enregistrer le compte'}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-
           <Card className="order-first border-primary/30 shadow-sm bg-primary/[0.025]">
             <CardHeader className="flex flex-row items-start justify-between gap-4 pb-2">
               <div>
@@ -231,14 +123,14 @@ export default function UserDetail({ params }: { params: { id: string } }) {
                   Marques autorisées
                 </CardTitle>
                 <CardDescription className="mt-1.5">
-                  Cochez ou décochez les marques accessibles à {user?.name}, puis cliquez sur « Enregistrer les marques ».
+                  Cochez ou décochez les marques accessibles à {user?.name}, puis cliquez sur « Enregistrer les marques ». Marques d’exemple en attendant BigQuery.
                 </CardDescription>
               </div>
               <Button 
                 size="sm" 
                 variant="outline" 
                 onClick={handleSaveBrands}
-                disabled={isSavingBrands || updateUser.isPending}
+                disabled={isSavingBrands || updateUser.isPending || brandsLoading || brandsError || !brands?.length}
                 className="gap-2"
               >
                 {isSavingBrands ? (
@@ -293,7 +185,13 @@ export default function UserDetail({ params }: { params: { id: string } }) {
                     </div>
                   </div>
                 ))}
-                {(!brands || brands.length === 0) && (
+                {brandsLoading && (
+                  <div className="col-span-2 text-sm text-muted-foreground text-center py-4">Chargement des marques...</div>
+                )}
+                {brandsError && (
+                  <div className="col-span-2 text-sm text-destructive text-center py-4">Impossible de charger les marques. Réessayez plus tard.</div>
+                )}
+                {!brandsLoading && !brandsError && brands?.length === 0 && (
                   <div className="col-span-2 text-sm text-muted-foreground text-center py-4">
                     Aucune marque disponible.
                   </div>
@@ -343,10 +241,6 @@ export default function UserDetail({ params }: { params: { id: string } }) {
                 <div className="flex justify-between border-b pb-2">
                   <dt className="text-muted-foreground">Créé le</dt>
                   <dd className="font-medium">{user?.createdAt ? format(new Date(user?.createdAt), 'd MMM yyyy', { locale: fr }) : '-'}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Compte</dt>
-                  <dd className="font-medium">{user?.accountName || 'Non assigné'}</dd>
                 </div>
               </dl>
             </CardContent>

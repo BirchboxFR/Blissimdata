@@ -2,8 +2,6 @@ import { Router, type IRouter } from "express";
 import { clerkClient } from "@clerk/express";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import {
-  CreateAccountBody,
-  CreateAccountResponse,
   CreatePackageBody,
   CreatePackageResponse,
   CreatePageBody,
@@ -14,7 +12,6 @@ import {
   InviteUserBody,
   InviteUserResponse,
   ListBrandsResponse,
-  ListAccountsResponse,
   ListAuditLogQueryParams,
   ListAuditLogResponse,
   ListPackagesResponse,
@@ -29,7 +26,6 @@ import {
   UpdateUserResponse,
 } from "@workspace/api-zod";
 import {
-  accountsTable,
   auditLogTable,
   brandsTable,
   db,
@@ -46,17 +42,12 @@ router.use(requireAuth);
 const iso = (value: Date | null) => value?.toISOString() ?? null;
 
 async function serializeUser(user: UserRecord) {
-  const account = user.accountId
-    ? (await db.select().from(accountsTable).where(eq(accountsTable.id, user.accountId)).limit(1))[0]
-    : undefined;
   return {
     id: user.id,
     email: user.email,
     name: user.name,
     role: user.role,
     status: user.status,
-    accountId: user.accountId,
-    accountName: account?.name ?? null,
     authType: user.authType,
     brandAccesses: user.brandAccesses,
     packageIds: user.packageIds,
@@ -78,8 +69,7 @@ async function recordAudit(action: string, targetType: string, targetName: strin
 }
 
 router.get("/dashboard", async (_req, res): Promise<void> => {
-  const [[accountCount], [userCount], [activeCount], [brandCount], [expiringCount], recent] = await Promise.all([
-    db.select({ value: sql<number>`count(*)::int` }).from(accountsTable),
+  const [[userCount], [activeCount], [brandCount], [expiringCount], recent] = await Promise.all([
     db.select({ value: sql<number>`count(*)::int` }).from(usersTable),
     db.select({ value: sql<number>`count(*)::int` }).from(usersTable).where(eq(usersTable.status, "active")),
     db.select({ value: sql<number>`count(*)::int` }).from(brandsTable),
@@ -93,7 +83,6 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     db.select().from(auditLogTable).orderBy(desc(auditLogTable.createdAt)).limit(6),
   ]);
   res.json(GetDashboardResponse.parse({
-    accounts: accountCount?.value ?? 0,
     users: userCount?.value ?? 0,
     activeUsers: activeCount?.value ?? 0,
     expiringAccesses: expiringCount?.value ?? 0,
@@ -102,37 +91,9 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
   }));
 });
 
-router.get("/accounts", async (_req, res): Promise<void> => {
-  const [accounts, brands, counts] = await Promise.all([
-    db.select().from(accountsTable).orderBy(accountsTable.name),
-    db.select().from(brandsTable),
-    db.select({ accountId: usersTable.accountId, value: sql<number>`count(*)::int` }).from(usersTable).groupBy(usersTable.accountId),
-  ]);
-  const byBrand = new Map(brands.map((brand) => [brand.id, brand]));
-  const byAccountCount = new Map(counts.map((item) => [item.accountId, item.value]));
-  const result = accounts.map((account) => ({
-    id: account.id,
-    name: account.name,
-    brands: account.brandIds.map((id) => byBrand.get(id)).filter(Boolean),
-    userCount: byAccountCount.get(account.id) ?? 0,
-    createdAt: account.createdAt.toISOString(),
-  }));
-  res.json(ListAccountsResponse.parse(result));
-});
-
 router.get("/brands", async (_req, res): Promise<void> => {
   const brands = await db.select().from(brandsTable).orderBy(brandsTable.name);
   res.json(ListBrandsResponse.parse(brands));
-});
-
-router.post("/accounts", async (req, res): Promise<void> => {
-  const parsed = CreateAccountBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [account] = await db.insert(accountsTable).values({ name: parsed.data.name, brandIds: parsed.data.brandIds ?? [] }).returning();
-  const brands = await db.select().from(brandsTable).where(sql`${brandsTable.id} = ANY(${account.brandIds})`);
-  const response = { ...account, brands, userCount: 0, createdAt: account.createdAt.toISOString() };
-  await recordAudit("created", "account", account.name, `Compte ${account.name} créé`, null, response);
-  res.status(201).json(CreateAccountResponse.parse(response));
 });
 
 router.get("/users", async (req, res): Promise<void> => {
@@ -169,7 +130,6 @@ router.post("/users", async (req, res): Promise<void> => {
     name: parsed.data.name,
     role: parsed.data.role,
     status: parsed.data.role === "admin" ? "active" : "invited",
-    accountId: parsed.data.accountId ?? null,
     authType: parsed.data.role === "admin" ? "google" : "hybrid",
     brandAccesses,
     packageIds: parsed.data.packageIds,

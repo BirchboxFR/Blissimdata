@@ -13,8 +13,6 @@ export interface UserInput {
   /** @minLength 1 */
   name: string;
   role: UserInputRole;
-  /** @nullable */
-  accountId?: number | null;
   brandAccesses: BrandAccessInput[];
   packageIds: number[];
 }

@@ -20,7 +20,6 @@ export interface AuditEvent {
 }
 
 export interface Dashboard {
-  accounts: number;
   users: number;
   activeUsers: number;
   expiringAccesses: number;
@@ -33,20 +32,6 @@ export interface Brand {
   code: string;
   name: string;
   countries: string[];
-}
-
-export interface Account {
-  id: number;
-  name: string;
-  brands: Brand[];
-  userCount: number;
-  createdAt: string;
-}
-
-export interface AccountInput {
-  /** @minLength 1 */
-  name: string;
-  brandIds?: number[];
 }
 
 export interface BrandAccess {
@@ -89,10 +74,6 @@ export interface User {
   name: string;
   role: UserRole;
   status: UserStatus;
-  /** @nullable */
-  accountId: number | null;
-  /** @nullable */
-  accountName: string | null;
   authType: UserAuthType;
   brandAccesses: BrandAccess[];
   packageIds: number[];
@@ -121,15 +102,11 @@ export interface UserInput {
   /** @minLength 1 */
   name: string;
   role: UserInputRole;
-  /** @nullable */
-  accountId?: number | null;
   brandAccesses: BrandAccessInput[];
   packageIds: number[];
 }
 
 export interface UserUpdate {
-  /** @nullable */
-  accountId?: number | null;
   brandAccesses?: BrandAccessInput[];
   packageIds?: number[];
 }

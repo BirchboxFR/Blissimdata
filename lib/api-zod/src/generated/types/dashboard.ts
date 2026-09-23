@@ -8,7 +8,6 @@
 import type { AuditEvent } from './auditEvent';
 
 export interface Dashboard {
-  accounts: number;
   users: number;
   activeUsers: number;
   expiringAccesses: number;

@@ -1,6 +1,6 @@
 import { useGetDashboard } from '@workspace/api-client-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, AlertTriangle, Activity, Briefcase } from 'lucide-react';
+import { Users, AlertTriangle, Activity, Briefcase } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -21,12 +21,12 @@ export default function Dashboard() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
         <h1 className="text-3xl font-display font-bold tracking-tight">Vue d'ensemble</h1>
-        <p className="text-muted-foreground mt-1">Métriques et activité récente sur les comptes gérés.</p>
+        <p className="text-muted-foreground mt-1">Métriques et activité récente sur les accès aux marques.</p>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+           {[...Array(3)].map((_, i) => (
             <Card key={i} className="border-border shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <Skeleton className="h-4 w-1/2" />
@@ -39,18 +39,7 @@ export default function Dashboard() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-border shadow-sm hover-elevate">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Comptes
-              </CardTitle>
-              <Building2 className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display">{dashboard?.accounts || 0}</div>
-            </CardContent>
-          </Card>
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="border-border shadow-sm hover-elevate">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">

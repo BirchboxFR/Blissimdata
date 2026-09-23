@@ -16,10 +16,6 @@ export interface User {
   name: string;
   role: UserRole;
   status: UserStatus;
-  /** @nullable */
-  accountId: number | null;
-  /** @nullable */
-  accountName: string | null;
   authType: UserAuthType;
   brandAccesses: BrandAccess[];
   packageIds: number[];

@@ -14,7 +14,6 @@ export const HealthCheckResponse = zod.object({
 
 
 export const GetDashboardResponse = zod.object({
-  "accounts": zod.number().int(),
   "users": zod.number().int(),
   "activeUsers": zod.number().int(),
   "expiringAccesses": zod.number().int(),
@@ -28,43 +27,6 @@ export const GetDashboardResponse = zod.object({
   "summary": zod.string(),
   "createdAt": zod.coerce.date()
 }))
-})
-
-
-export const ListAccountsResponseItem = zod.object({
-  "id": zod.number().int(),
-  "name": zod.string(),
-  "brands": zod.array(zod.object({
-  "id": zod.number().int(),
-  "code": zod.string(),
-  "name": zod.string(),
-  "countries": zod.array(zod.string())
-})),
-  "userCount": zod.number().int(),
-  "createdAt": zod.coerce.date()
-})
-export const ListAccountsResponse = zod.array(ListAccountsResponseItem)
-
-
-
-
-
-export const CreateAccountBody = zod.object({
-  "name": zod.string().min(1),
-  "brandIds": zod.array(zod.number().int()).optional()
-})
-
-export const CreateAccountResponse = zod.object({
-  "id": zod.number().int(),
-  "name": zod.string(),
-  "brands": zod.array(zod.object({
-  "id": zod.number().int(),
-  "code": zod.string(),
-  "name": zod.string(),
-  "countries": zod.array(zod.string())
-})),
-  "userCount": zod.number().int(),
-  "createdAt": zod.coerce.date()
 })
 
 
@@ -88,8 +50,6 @@ export const ListUsersResponseItem = zod.object({
   "name": zod.string(),
   "role": zod.enum(['admin', 'brand']),
   "status": zod.enum(['active', 'invited', 'expired']),
-  "accountId": zod.number().int().nullable(),
-  "accountName": zod.string().nullable(),
   "authType": zod.enum(['google', 'password', 'hybrid']),
   "brandAccesses": zod.array(zod.object({
   "brandId": zod.number().int(),
@@ -111,7 +71,6 @@ export const InviteUserBody = zod.object({
   "email": zod.string().email(),
   "name": zod.string().min(1),
   "role": zod.enum(['admin', 'brand']),
-  "accountId": zod.number().int().nullish(),
   "brandAccesses": zod.array(zod.object({
   "brandId": zod.number().int(),
   "countryScope": zod.union([zod.literal("ALL"),zod.array(zod.string())]),
@@ -126,8 +85,6 @@ export const InviteUserResponse = zod.object({
   "name": zod.string(),
   "role": zod.enum(['admin', 'brand']),
   "status": zod.enum(['active', 'invited', 'expired']),
-  "accountId": zod.number().int().nullable(),
-  "accountName": zod.string().nullable(),
   "authType": zod.enum(['google', 'password', 'hybrid']),
   "brandAccesses": zod.array(zod.object({
   "brandId": zod.number().int(),
@@ -151,8 +108,6 @@ export const GetUserResponse = zod.object({
   "name": zod.string(),
   "role": zod.enum(['admin', 'brand']),
   "status": zod.enum(['active', 'invited', 'expired']),
-  "accountId": zod.number().int().nullable(),
-  "accountName": zod.string().nullable(),
   "authType": zod.enum(['google', 'password', 'hybrid']),
   "brandAccesses": zod.array(zod.object({
   "brandId": zod.number().int(),
@@ -171,7 +126,6 @@ export const UpdateUserParams = zod.object({
 })
 
 export const UpdateUserBody = zod.object({
-  "accountId": zod.number().int().nullish(),
   "brandAccesses": zod.array(zod.object({
   "brandId": zod.number().int(),
   "countryScope": zod.union([zod.literal("ALL"),zod.array(zod.string())]),
@@ -186,8 +140,6 @@ export const UpdateUserResponse = zod.object({
   "name": zod.string(),
   "role": zod.enum(['admin', 'brand']),
   "status": zod.enum(['active', 'invited', 'expired']),
-  "accountId": zod.number().int().nullable(),
-  "accountName": zod.string().nullable(),
   "authType": zod.enum(['google', 'password', 'hybrid']),
   "brandAccesses": zod.array(zod.object({
   "brandId": zod.number().int(),

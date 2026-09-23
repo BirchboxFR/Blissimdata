@@ -8,8 +8,6 @@
 import type { BrandAccessInput } from './brandAccessInput';
 
 export interface UserUpdate {
-  /** @nullable */
-  accountId?: number | null;
   brandAccesses?: BrandAccessInput[];
   packageIds?: number[];
 }

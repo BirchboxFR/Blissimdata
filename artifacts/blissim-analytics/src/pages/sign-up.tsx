@@ -48,7 +48,7 @@ export default function SignUpPage() {
             Rejoignez l'espace <br/>d'administration.
           </h2>
           <p className="text-muted-foreground font-sans text-lg">
-            Connectez-vous à Blissim Analytics pour gérer les comptes partenaires et les accès aux rapports de votre organisation.
+            Connectez-vous à Blissim Analytics pour gérer les utilisateurs et leurs accès aux marques.
           </p>
           
           <div className="mt-8 p-6 bg-card border rounded-2xl shadow-sm">

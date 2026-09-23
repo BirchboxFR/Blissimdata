@@ -14,7 +14,6 @@ import SignUpPage from '@/pages/sign-up';
 import Dashboard from '@/pages/dashboard';
 import Users from '@/pages/users';
 import UserDetail from '@/pages/user-detail';
-import Accounts from '@/pages/accounts';
 import Packages from '@/pages/packages';
 import Pages from '@/pages/pages';
 import Audit from '@/pages/audit';
@@ -50,7 +49,6 @@ function Router() {
             <ProtectedRoute path="/dashboard" component={Dashboard} />
             <ProtectedRoute path="/users" component={Users} />
             <ProtectedRoute path="/users/:id" component={UserDetail} />
-            <ProtectedRoute path="/accounts" component={Accounts} />
             <ProtectedRoute path="/packages" component={Packages} />
             <ProtectedRoute path="/pages" component={Pages} />
             <ProtectedRoute path="/audit" component={Audit} />

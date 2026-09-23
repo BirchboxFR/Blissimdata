@@ -9,7 +9,6 @@ servers:
 tags:
   - { name: health }
   - { name: dashboard }
-  - { name: accounts }
   - { name: brands }
   - { name: users }
   - { name: packages }
@@ -36,32 +35,6 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Dashboard" }
-  /accounts:
-    get:
-      operationId: listAccounts
-      tags: [accounts]
-      responses:
-        "200":
-          description: Accounts
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: "#/components/schemas/Account" }
-    post:
-      operationId: createAccount
-      tags: [accounts]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/AccountInput" }
-      responses:
-        "201":
-          description: Created account
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/Account" }
   /brands:
     get:
       operationId: listBrands
@@ -235,9 +208,8 @@ components:
         status: { type: string }
     Dashboard:
       type: object
-      required: [accounts, users, activeUsers, expiringAccesses, brands, recentActivity]
+      required: [users, activeUsers, expiringAccesses, brands, recentActivity]
       properties:
-        accounts: { type: integer }
         users: { type: integer }
         activeUsers: { type: integer }
         expiringAccesses: { type: integer }
@@ -255,25 +227,6 @@ components:
         countries:
           type: array
           items: { type: string }
-    Account:
-      type: object
-      required: [id, name, brands, userCount, createdAt]
-      properties:
-        id: { type: integer }
-        name: { type: string }
-        brands:
-          type: array
-          items: { $ref: "#/components/schemas/Brand" }
-        userCount: { type: integer }
-        createdAt: { type: string, format: date-time }
-    AccountInput:
-      type: object
-      required: [name]
-      properties:
-        name: { type: string, minLength: 1 }
-        brandIds:
-          type: array
-          items: { type: integer }
     BrandAccess:
       type: object
       required: [brandId, brandName, countryScope]
@@ -287,15 +240,13 @@ components:
         expiresAt: { type: ["string", "null"], format: date-time }
     User:
       type: object
-      required: [id, email, name, role, status, accountId, accountName, authType, brandAccesses, packageIds, createdAt]
+      required: [id, email, name, role, status, authType, brandAccesses, packageIds, createdAt]
       properties:
         id: { type: integer }
         email: { type: string, format: email }
         name: { type: string }
         role: { type: string, enum: [admin, brand] }
         status: { type: string, enum: [active, invited, expired] }
-        accountId: { type: ["integer", "null"] }
-        accountName: { type: ["string", "null"] }
         authType: { type: string, enum: [google, password, hybrid] }
         brandAccesses:
           type: array
@@ -312,7 +263,6 @@ components:
         email: { type: string, format: email }
         name: { type: string, minLength: 1 }
         role: { type: string, enum: [admin, brand] }
-        accountId: { type: ["integer", "null"] }
         brandAccesses:
           type: array
           items: { $ref: "#/components/schemas/BrandAccessInput" }
@@ -322,7 +272,6 @@ components:
     UserUpdate:
       type: object
       properties:
-        accountId: { type: ["integer", "null"] }
         brandAccesses:
           type: array
           items: { $ref: "#/components/schemas/BrandAccessInput" }
